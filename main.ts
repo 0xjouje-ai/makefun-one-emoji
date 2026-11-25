@@ -21,14 +21,22 @@ const EMOJI = "🧭";
 const outDir = process.env.MAKEFUN_OUTPUT_DIR || "/output";
 
 // The gate only accepts UTF-8 text of 1 to 16 characters, not only
-// whitespace: refuse to write anything that would fail it.
+// whitespace — and this entry is exactly ONE emoji, so enforce that
+// strictly: one code point, four UTF-8 bytes, no newline. (The old
+// check only bounded the count from below and measured length in
+// UTF-16 code units, so a multi-emoji string could slip through.)
+const glyphs = [...EMOJI];
+const byteLength = Buffer.byteLength(EMOJI, "utf8");
 if (
-  [...EMOJI].length < 1 ||
-  EMOJI.length > 16 ||
+  glyphs.length !== 1 ||
+  byteLength !== 4 ||
+  glyphs.length > 16 ||
   EMOJI.trim() === "" ||
   EMOJI.includes("\n")
 ) {
-  throw new Error(`entry fails the gate: ${[...EMOJI].length} glyph(s)`);
+  throw new Error(
+    `entry fails the gate: ${glyphs.length} glyph(s), ${byteLength} byte(s)`,
+  );
 }
 
 mkdirSync(outDir, { recursive: true });
